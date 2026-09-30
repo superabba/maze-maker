@@ -16,6 +16,9 @@
       <label>순서
         <select id="seqSelect"></select>
       </label>
+      <label>장 수
+        <input type="number" id="countInput" min="1" max="30" value="1">
+      </label>
       <label class="check"><input type="checkbox" id="answerCheck"> 정답지도 함께</label>
       <button id="makeBtn">새로 만들기</button>
       <button id="printBtn">인쇄하기</button>
@@ -24,6 +27,7 @@
   </div>
 
   <div id="pages"></div>
+  <div id="answerPages" hidden></div>
 
   <script src="shapes.js"></script>
   <script src="maze.js"></script>

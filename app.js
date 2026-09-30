@@ -40,10 +40,12 @@ function guideText(maze) {
 }
 
 // 문제지(또는 정답지) 한 장 그리기
-function renderPage(maze, shape, isAnswer) {
+// no: 여러 장 만들 때 문제지 번호 (정답지와 짝 맞추기용)
+function renderPage(maze, shape, isAnswer, no) {
   const page = htmlEl('section', 'page');
   const head = htmlEl('div', 'sheet-head');
   const h2 = htmlEl('h2', null, shape.name + ' 미로 ');
+  if (no) h2.appendChild(htmlEl('span', 'sheet-no', no + '번 '));
   if (isAnswer) h2.appendChild(htmlEl('span', 'answer-tag', '(정답)'));
   head.appendChild(h2);
   head.appendChild(htmlEl('div', 'name-line', '이름: ____________   날짜: ____-__-__'));
@@ -139,24 +141,50 @@ let generateId = 0;
 function generate() {
   const shapeVal = document.getElementById('shapeSelect').value;
   const seqId = document.getElementById('seqSelect').value;
-  const withAnswer = document.getElementById('answerCheck').checked;
+  const countInput = document.getElementById('countInput');
+  const count = Math.max(1, Math.min(30, parseInt(countInput.value, 10) || 1));
+  countInput.value = count;
   const status = document.getElementById('status');
   const pages = document.getElementById('pages');
+  const answers = document.getElementById('answerPages');
+  const printBtn = document.getElementById('printBtn');
   status.textContent = '미로를 만드는 중입니다…';
   pages.textContent = '';
+  answers.textContent = '';
+  toggleAnswers();
   const myId = ++generateId;  // 연달아 누르면 마지막 요청만 그린다
 
-  setTimeout(() => {
+  // 장 수만큼 [새로 만들기]를 누른 것처럼 매번 다른 미로를 만든다. 전체 모양이면 한 벌씩 반복
+  const list = shapeVal === 'all' ? SHAPES : SHAPES.filter(s => s.id === shapeVal);
+  const jobs = [];
+  for (let no = 1; no <= count; no++) list.forEach(shape => jobs.push({ shape, no: count > 1 ? no : 0 }));
+  printBtn.disabled = true;
+
+  // 한 장씩 나눠 만들어 화면이 멈추지 않게 한다
+  let done = 0, failed = 0;
+  const step = () => {
     if (myId !== generateId) return;
-    const t0 = performance.now();
-    const list = shapeVal === 'all' ? SHAPES : SHAPES.filter(s => s.id === shapeVal);
-    list.forEach(shape => {
-      const maze = buildMaze(shape.id, seqId);
-      pages.appendChild(renderPage(maze, shape, false));
-      if (withAnswer && maze) pages.appendChild(renderPage(maze, shape, true));
-    });
-    status.textContent = `${list.length}가지 모양 완성 (${Math.round(performance.now() - t0)}ms). 인쇄하면 한 모양당 A4 한 장씩 나옵니다.`;
-  }, 30);
+    const { shape, no } = jobs[done];
+    const maze = buildMaze(shape.id, seqId);
+    pages.appendChild(renderPage(maze, shape, false, no));
+    if (maze) answers.appendChild(renderPage(maze, shape, true, no));
+    else failed++;
+    done++;
+    if (done < jobs.length) {
+      status.textContent = `미로를 만드는 중입니다… ${done} / ${jobs.length}`;
+      setTimeout(step, 0);
+      return;
+    }
+    printBtn.disabled = false;
+    status.textContent = `문제지 ${jobs.length}장 완성` + (failed ? ` (길을 못 찾은 ${failed}장은 다시 만들어 주세요)` : '') +
+      '. 정답지는 문제지 뒤에 같은 번호로 모여 나옵니다.';
+  };
+  setTimeout(step, 30);
+}
+
+// 정답지 체크: 미로는 그대로 두고 정답지만 보이기/숨기기
+function toggleAnswers() {
+  document.getElementById('answerPages').hidden = !document.getElementById('answerCheck').checked;
 }
 
 function init() {
@@ -187,7 +215,8 @@ function init() {
   document.getElementById('printBtn').addEventListener('click', () => window.print());
   shapeSelect.addEventListener('change', generate);
   seqSelect.addEventListener('change', generate);
-  document.getElementById('answerCheck').addEventListener('change', generate);
+  document.getElementById('countInput').addEventListener('change', generate);
+  document.getElementById('answerCheck').addEventListener('change', toggleAnswers);
   generate();
 }
 

@@ -26,21 +26,29 @@ body {
 #controls h1 { font-size: 18px; margin: 0 0 8px; }
 #controls h1 small { color: #888; font-weight: normal; }
 #controls .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-#controls select, #controls button { font: inherit; padding: 4px 8px; }
+#controls select, #controls button, #controls input[type=number] { font: inherit; padding: 4px 8px; }
+#controls input[type=number] { width: 4.5em; }
 #controls button { cursor: pointer; }
+#controls button:disabled { cursor: wait; opacity: .5; }
 #status { margin: 6px 0 0; color: #666; font-size: 13px; }
 
-/* 문제지 한 장 (A4) */
+/* 문제지 한 장 (A4): 높이를 고정하고, 위쪽 글이 차지하고 남은 공간을 미로 그림이 채운다 */
 .page {
   width: 190mm;
+  height: 277mm;
   margin: 10mm auto;
   padding: 8mm;
   background: #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, .15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
+.page > * { flex: none; }
 .sheet-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .sheet-head h2 { margin: 0; font-size: 22px; }
 .sheet-head .answer-tag { color: #e53935; }
+.sheet-head .sheet-no { color: #555; }
 .name-line { font-size: 14px; white-space: nowrap; }
 .guide { margin: 6px 0 2px; font-size: 15px; }
 .meta { margin: 0 0 6px; font-size: 12px; color: #555; }
@@ -69,7 +77,7 @@ body {
 .hint-note { color: #555; font-size: 12px; margin-top: 2px; }
 .fail { color: #c62828; padding: 40px 0; text-align: center; }
 
-svg.maze { display: block; width: 100%; height: 225mm; }
+.page > svg.maze { display: block; width: 100%; flex: 1 1 0; min-height: 0; margin-top: 2mm; }
 svg.maze text { font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
 
 /* 인쇄: 조작 영역 숨기고 한 모양당 한 장 */
@@ -77,11 +85,13 @@ svg.maze text { font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
 @media print {
   body { background: #fff; }
   .no-print { display: none; }
-  .page { margin: 0; padding: 0; width: auto; box-shadow: none; break-after: page; }
-  .page:last-child { break-after: auto; }
+  /* 인쇄 영역(297 − 위아래 여백 20 = 277mm)보다 조금 작게 잡아 프린터 오차에도 한 장에 들어가게 */
+  .page { margin: 0; padding: 0; width: auto; height: 270mm; box-shadow: none; }
+  /* 첫 장을 뺀 모든 장은 새 쪽에서 시작 (정답지 첫 장 포함) */
+  .page + .page, #answerPages .page { break-before: page; }
 }
 
-@media (max-width: 800px) {
-  .page { width: auto; margin: 16px; }
-  svg.maze { height: auto; }
+@media screen and (max-width: 800px) {
+  .page { width: auto; height: auto; margin: 16px; overflow: visible; }
+  .page > svg.maze { flex: none; height: auto; }
 }
