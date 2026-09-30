@@ -1,0 +1,87 @@
+/* 숫자 미로 생성기 – 화면과 인쇄(A4 세로) 디자인 */
+:root {
+  --ink: #222;
+  --start: #d9f2d0;
+  --end: #ffd9e0;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #e9e6e0;
+  color: var(--ink);
+  font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+}
+
+/* 조작 영역 */
+#controls {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #fff;
+  border-bottom: 1px solid #ccc;
+  padding: 10px 16px;
+}
+#controls h1 { font-size: 18px; margin: 0 0 8px; }
+#controls h1 small { color: #888; font-weight: normal; }
+#controls .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+#controls select, #controls button { font: inherit; padding: 4px 8px; }
+#controls button { cursor: pointer; }
+#status { margin: 6px 0 0; color: #666; font-size: 13px; }
+
+/* 문제지 한 장 (A4) */
+.page {
+  width: 190mm;
+  margin: 10mm auto;
+  padding: 8mm;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .15);
+}
+.sheet-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.sheet-head h2 { margin: 0; font-size: 22px; }
+.sheet-head .answer-tag { color: #e53935; }
+.name-line { font-size: 14px; white-space: nowrap; }
+.guide { margin: 6px 0 2px; font-size: 15px; }
+.meta { margin: 0 0 6px; font-size: 12px; color: #555; }
+.swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 1px solid #555;
+  vertical-align: -1px;
+  margin: 0 3px 0 10px;
+}
+.swatch.start { background: var(--start); }
+.swatch.end { background: var(--end); }
+/* 참고표 (원주율, 팩토리얼 등) */
+.hint {
+  border: 1.5px solid #888;
+  border-radius: 6px;
+  padding: 5px 10px;
+  margin: 6px 0;
+  font-size: 13px;
+}
+.hint-title { font-weight: bold; margin-bottom: 2px; }
+.hint-body { display: flex; flex-wrap: wrap; gap: 2px 18px; }
+.hint-item { font-variant-numeric: tabular-nums; }
+.hint.big .hint-body { font-family: Consolas, "Courier New", monospace; font-size: 15px; letter-spacing: 1px; word-spacing: 4px; }
+.hint-note { color: #555; font-size: 12px; margin-top: 2px; }
+.fail { color: #c62828; padding: 40px 0; text-align: center; }
+
+svg.maze { display: block; width: 100%; height: 225mm; }
+svg.maze text { font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
+
+/* 인쇄: 조작 영역 숨기고 한 모양당 한 장 */
+@page { size: A4 portrait; margin: 10mm; }
+@media print {
+  body { background: #fff; }
+  .no-print { display: none; }
+  .page { margin: 0; padding: 0; width: auto; box-shadow: none; break-after: page; }
+  .page:last-child { break-after: auto; }
+}
+
+@media (max-width: 800px) {
+  .page { width: auto; margin: 16px; }
+  svg.maze { height: auto; }
+}

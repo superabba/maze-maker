@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>숫자 미로 생성기</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="controls" class="no-print">
+    <h1>숫자 미로 생성기 <small>(초안)</small></h1>
+    <div class="row">
+      <label>모양
+        <select id="shapeSelect"></select>
+      </label>
+      <label>순서
+        <select id="seqSelect"></select>
+      </label>
+      <label class="check"><input type="checkbox" id="answerCheck"> 정답지도 함께</label>
+      <button id="makeBtn">새로 만들기</button>
+      <button id="printBtn">인쇄하기</button>
+    </div>
+    <p id="status"></p>
+  </div>
+
+  <div id="pages"></div>
+
+  <script src="shapes.js"></script>
+  <script src="maze.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
