@@ -72,13 +72,24 @@ function renderPage(maze, shape, isAnswer, no) {
 
 // 문제지 위쪽 참고표 (원주율 자릿수, 팩토리얼 계산 등)
 function renderHint(hint) {
-  const box = htmlEl('div', 'hint' + (hint.big ? ' big' : ''));
+  // 항목이 많으면(제곱수·삼각수 등) 글씨를 줄여 미로 그림 자리를 넓힌다
+  const box = htmlEl('div', 'hint' + (hint.big ? ' big' : '') + (hint.lines.length > 24 ? ' many' : ''));
   box.appendChild(htmlEl('div', 'hint-title', hint.title));
   const body = htmlEl('div', 'hint-body');
-  hint.lines.forEach(line => body.appendChild(htmlEl('span', 'hint-item', line)));
+  hint.lines.forEach(line => body.appendChild(hintItem(line)));
   box.appendChild(body);
   if (hint.note) box.appendChild(htmlEl('div', 'hint-note', hint.note));
   return box;
+}
+
+// "2^3=8" 처럼 ^ 뒤의 숫자는 윗첨자로 적는다.
+function hintItem(line) {
+  const item = htmlEl('span', 'hint-item');
+  line.split(/\^(\d+)/).forEach((part, i) => {
+    if (i % 2) item.appendChild(htmlEl('sup', null, part));
+    else if (part) item.appendChild(document.createTextNode(part));
+  });
+  return item;
 }
 
 function drawMaze(maze, isAnswer) {

@@ -75,6 +75,11 @@ function factorialTokens(n) {
   return out.slice(0, n);
 }
 
+// 삼각수 덧셈식: 1+2+3+4+5 까지는 다 적고, 그보다 길면 1+2+…+k 로 줄인다.
+function triangleSum(k) {
+  return k <= 5 ? range(k, i => i + 1).join('+') : `1+2+…+${k}`;
+}
+
 function factorialHint(labels) {
   const ks = [];
   labels.forEach(t => {
@@ -101,13 +106,13 @@ const SEQUENCES = [
   { id: 'prime', group: '수학 수열', name: '소수 (2, 3, 5, 7 …)', make: primes,
     hint: () => ({ title: '소수', lines: ['1과 자기 자신으로만 나누어떨어지는 수 (2, 3, 5, 7, 11, …)'] }) },
   { id: 'square', group: '수학 수열', name: '제곱수 (1, 4, 9 …)', make: n => range(n, i => String((i + 1) ** 2)),
-    hint: () => ({ title: '제곱수', lines: ['1×1, 2×2, 3×3, 4×4 … → 1, 4, 9, 16, …'] }) },
+    hint: labels => ({ title: '제곱수', lines: labels.map((t, i) => `${i + 1}×${i + 1}=${t}`) }) },
   { id: 'triangle', group: '수학 수열', name: '삼각수 (1, 3, 6, 10 …)', make: n => range(n, i => String((i + 1) * (i + 2) / 2)),
-    hint: () => ({ title: '삼각수', lines: ['1, 1+2, 1+2+3, 1+2+3+4 … → 1, 3, 6, 10, …'] }) },
+    hint: labels => ({ title: '삼각수', lines: labels.map((t, i) => i === 0 ? t : `${triangleSum(i + 1)}=${t}`) }) },
   { id: 'fib', group: '수학 수열', name: '피보나치 (1, 1, 2, 3, 5 …)', make: n => cycleOf(FIB, n), ref: true,
     hint: labels => ({ title: '피보나치 수열 (앞의 두 수를 더해요)', lines: [FIB.slice(0, Math.min(labels.length, FIB.length)).join(', ')], note: labels.length > FIB.length ? `${FIB[FIB.length - 1]} 다음에는 다시 1, 1, 2 …부터.` : '' }) },
   { id: 'pow2', group: '수학 수열', name: '2의 거듭제곱 (1, 2, 4, 8 …)', make: n => cycleOf(POW2, n), ref: true,
-    hint: labels => ({ title: '2의 거듭제곱 (2를 계속 곱해요)', lines: [POW2.slice(0, Math.min(labels.length, POW2.length)).join(', ')], note: labels.length > POW2.length ? `${POW2[POW2.length - 1]} 다음에는 다시 1부터.` : '' }) },
+    hint: labels => ({ title: '2의 거듭제곱 (2를 계속 곱해요)', lines: POW2.slice(0, Math.min(labels.length, POW2.length)).map((t, i) => i < 2 ? t : `2^${i}=${t}`), note: labels.length > POW2.length ? `${POW2[POW2.length - 1]} 다음에는 다시 1부터.` : '' }) },
   { id: 'pi', group: '수학 수열', name: '원주율 π (3.1415 …)', make: n => [...piDigits(n)], ref: true,
     hint: labels => ({ title: '원주율 π', lines: [groupDecimals(labels.join(''))], big: true }) },
   { id: 'e', group: '수학 수열', name: '자연상수 e (2.7182 …)', make: n => [...eDigits(n)], ref: true,
