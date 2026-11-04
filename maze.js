@@ -61,6 +61,7 @@ function groupDecimals(digits) {
 // 각 수열이 반복되는 범위
 const PRIME_MAX = 100;   // 소수: 100 이하
 const SQUARE_MAX = 20;   // 제곱수: 1×1 ~ 20×20
+const CUBE_MAX = 10;     // 세제곱: 1×1×1 ~ 10×10×10
 const TRI_MAX = 10;      // 삼각수: 1 ~ 1+2+…+10
 const FIB_MAX = 100;     // 피보나치: 100 이하
 const POW2_MAX = 15;     // 2의 거듭제곱: 2^0 ~ 2^15
@@ -69,6 +70,7 @@ const DEC_MAX = 20;      // π, e: 소수점 아래 20자리
 const PRIMES = (() => { const p = []; for (let x = 2; x <= PRIME_MAX; x++) if (p.every(q => x % q)) p.push(x); return p.map(String); })();
 const SQUARES = range(SQUARE_MAX, i => String((i + 1) ** 2));
 const TRIS = range(TRI_MAX, i => String((i + 1) * (i + 2) / 2));
+const CUBES = range(CUBE_MAX, i => String((i + 1) ** 3));
 const FIB = (() => { const f = [1, 1]; while (f[f.length - 1] + f[f.length - 2] <= FIB_MAX) f.push(f[f.length - 1] + f[f.length - 2]); return f.map(String); })();
 const POW2 = range(POW2_MAX + 1, i => String(2 ** i));
 const FACT_MAX = 10;
@@ -123,14 +125,17 @@ const SEQUENCES = [
   { id: 'abc', group: '기본', name: '알파벳 A→Z (반복)', make: n => range(n, i => String.fromCharCode(65 + i % 26)), cycle: 'A→B→…→Z' },
   { id: 'kor', group: '기본', name: '자음 ㄱ→ㅎ (반복)', make: n => cycleOf([...'ㄱㄴㄷㄹㅁㅂㅅㅇㅈㅊㅋㅌㅍㅎ'], n), cycle: 'ㄱ→ㄴ→…→ㅎ' },
 
-  { id: 'prime', group: '수학 수열', name: '소수 (100까지 반복)', make: n => cycleOf(PRIMES, n), period: PRIMES.length, cycle: `${PRIMES[0]}→${PRIMES[1]}→…→${PRIMES[PRIMES.length - 1]}`,
-    hint: labels => ({ title: `소수 (1과 자기 자신으로만 나누어떨어지는 수, ${PRIME_MAX}까지)`, lines: [PRIMES.slice(0, Math.min(labels.length, PRIMES.length)).join(', ')],
+  { id: 'prime', group: '수학 수열', name: '소수(prime number) (100까지 반복)', make: n => cycleOf(PRIMES, n), period: PRIMES.length, cycle: `${PRIMES[0]}→${PRIMES[1]}→…→${PRIMES[PRIMES.length - 1]}`,
+    hint: labels => ({ title: `소수(prime number) (1과 자기 자신으로만 나누어떨어지는 수, ${PRIME_MAX}까지)`, lines: [PRIMES.slice(0, Math.min(labels.length, PRIMES.length)).join(', ')],
       note: labels.length > PRIMES.length ? `${PRIMES[PRIMES.length - 1]} 다음에는 다시 ${PRIMES[0]}부터.` : '' }) },
-  { id: 'square', group: '수학 수열', name: '제곱수 (20×20까지 반복)', make: n => cycleOf(SQUARES, n), period: SQUARES.length, cycle: `1→4→…→${SQUARES[SQUARES.length - 1]}`,
-    hint: labels => ({ title: '제곱수', lines: SQUARES.slice(0, Math.min(labels.length, SQUARES.length)).map((t, i) => `${i + 1}×${i + 1}=${t}`),
+  { id: 'square', group: '수학 수열', name: '제곱수(square) (20×20까지 반복)', make: n => cycleOf(SQUARES, n), period: SQUARES.length, cycle: `1→4→…→${SQUARES[SQUARES.length - 1]}`,
+    hint: labels => ({ title: '제곱수(square)', lines: SQUARES.slice(0, Math.min(labels.length, SQUARES.length)).map((t, i) => `${i + 1}×${i + 1}=${t}`),
       note: labels.length > SQUARES.length ? `${SQUARES[SQUARES.length - 1]} 다음에는 다시 1부터.` : '' }) },
-  { id: 'triangle', group: '수학 수열', name: '삼각수 (10번째까지 반복)', make: n => cycleOf(TRIS, n), period: TRIS.length, cycle: `1→3→…→${TRIS[TRIS.length - 1]}`,
-    hint: labels => ({ title: '삼각수', lines: TRIS.slice(0, Math.min(labels.length, TRIS.length)).map((t, i) => i === 0 ? t : `${triangleSum(i + 1)}=${t}`),
+  { id: 'cube', group: '수학 수열', name: '세제곱(cube) (10×10×10까지 반복)', make: n => cycleOf(CUBES, n), period: CUBES.length, cycle: `1→8→…→${CUBES[CUBES.length - 1]}`,
+    hint: labels => ({ title: '세제곱(cube)', lines: CUBES.slice(0, Math.min(labels.length, CUBES.length)).map((t, i) => `${i + 1}×${i + 1}×${i + 1}=${t}`),
+      note: labels.length > CUBES.length ? `${CUBES[CUBES.length - 1]} 다음에는 다시 1부터.` : '' }) },
+  { id: 'triangle', group: '수학 수열', name: '삼각수(step squad, triangular number) (10번째까지 반복)', make: n => cycleOf(TRIS, n), period: TRIS.length, cycle: `1→3→…→${TRIS[TRIS.length - 1]}`,
+    hint: labels => ({ title: '삼각수(step squad, triangular number)', lines: TRIS.slice(0, Math.min(labels.length, TRIS.length)).map((t, i) => i === 0 ? t : `${triangleSum(i + 1)}=${t}`),
       note: labels.length > TRIS.length ? `${TRIS[TRIS.length - 1]} 다음에는 다시 1부터.` : '' }) },
   { id: 'fib', group: '수학 수열', name: '피보나치 (100까지 반복)', make: n => cycleOf(FIB, n), period: FIB.length, ref: true,
     hint: labels => ({ title: `피보나치 수열 (앞의 두 수를 더해요, ${FIB_MAX} 이하)`, lines: [FIB.slice(0, Math.min(labels.length, FIB.length)).join(', ')], note: labels.length > FIB.length ? `${FIB[FIB.length - 1]} 다음에는 다시 1, 1, 2 …부터.` : '' }) },
