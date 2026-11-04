@@ -58,8 +58,19 @@ function groupDecimals(digits) {
   return digits[0] + '.' + (digits.slice(1).match(/.{1,4}/g) || []).join(' ');
 }
 
-const FIB = (() => { const f = [1, 1]; while (f.length < 30) f.push(f[f.length - 1] + f[f.length - 2]); return f.map(String); })();
-const POW2 = range(21, i => String(2 ** i));
+// 각 수열이 반복되는 범위
+const PRIME_MAX = 100;   // 소수: 100 이하
+const SQUARE_MAX = 20;   // 제곱수: 1×1 ~ 20×20
+const TRI_MAX = 10;      // 삼각수: 1 ~ 1+2+…+10
+const FIB_MAX = 100;     // 피보나치: 100 이하
+const POW2_MAX = 15;     // 2의 거듭제곱: 2^0 ~ 2^15
+const DEC_MAX = 20;      // π, e: 소수점 아래 20자리
+
+const PRIMES = (() => { const p = []; for (let x = 2; x <= PRIME_MAX; x++) if (p.every(q => x % q)) p.push(x); return p.map(String); })();
+const SQUARES = range(SQUARE_MAX, i => String((i + 1) ** 2));
+const TRIS = range(TRI_MAX, i => String((i + 1) * (i + 2) / 2));
+const FIB = (() => { const f = [1, 1]; while (f[f.length - 1] + f[f.length - 2] <= FIB_MAX) f.push(f[f.length - 1] + f[f.length - 2]); return f.map(String); })();
+const POW2 = range(POW2_MAX + 1, i => String(2 ** i));
 const FACT_MAX = 10;
 
 // 팩토리얼: n! → n → n−1 → … → 1 → 결과 (1!은 1! → 1), 10! 다음은 다시 1!
@@ -71,6 +82,15 @@ function factorialTokens(n) {
     out.push(k + '!');
     if (k > 1) for (let j = k; j >= 1; j--) out.push(String(j));
     out.push(f.toString());
+  }
+  return out.slice(0, n);
+}
+
+// 팩토리얼 칸의 묶음 번호: n! 하나(식 → 곱하는 수 → 결과)가 한 묶음 (factorialTokens 와 같은 순서)
+function factorialGroups(n) {
+  const out = [];
+  for (let k = 1, g = 0; out.length < n; k = k === FACT_MAX ? 1 : k + 1, g++) {
+    for (let i = 0; i < (k > 1 ? k + 2 : 2); i++) out.push(g);
   }
   return out.slice(0, n);
 }
@@ -103,21 +123,26 @@ const SEQUENCES = [
   { id: 'abc', group: '기본', name: '알파벳 A→Z (반복)', make: n => range(n, i => String.fromCharCode(65 + i % 26)), cycle: 'A→B→…→Z' },
   { id: 'kor', group: '기본', name: '자음 ㄱ→ㅎ (반복)', make: n => cycleOf([...'ㄱㄴㄷㄹㅁㅂㅅㅇㅈㅊㅋㅌㅍㅎ'], n), cycle: 'ㄱ→ㄴ→…→ㅎ' },
 
-  { id: 'prime', group: '수학 수열', name: '소수 (2, 3, 5, 7 …)', make: primes,
-    hint: () => ({ title: '소수', lines: ['1과 자기 자신으로만 나누어떨어지는 수 (2, 3, 5, 7, 11, …)'] }) },
-  { id: 'square', group: '수학 수열', name: '제곱수 (1, 4, 9 …)', make: n => range(n, i => String((i + 1) ** 2)),
-    hint: labels => ({ title: '제곱수', lines: labels.map((t, i) => `${i + 1}×${i + 1}=${t}`) }) },
-  { id: 'triangle', group: '수학 수열', name: '삼각수 (1, 3, 6, 10 …)', make: n => range(n, i => String((i + 1) * (i + 2) / 2)),
-    hint: labels => ({ title: '삼각수', lines: labels.map((t, i) => i === 0 ? t : `${triangleSum(i + 1)}=${t}`) }) },
-  { id: 'fib', group: '수학 수열', name: '피보나치 (1, 1, 2, 3, 5 …)', make: n => cycleOf(FIB, n), ref: true,
-    hint: labels => ({ title: '피보나치 수열 (앞의 두 수를 더해요)', lines: [FIB.slice(0, Math.min(labels.length, FIB.length)).join(', ')], note: labels.length > FIB.length ? `${FIB[FIB.length - 1]} 다음에는 다시 1, 1, 2 …부터.` : '' }) },
-  { id: 'pow2', group: '수학 수열', name: '2의 거듭제곱 (1, 2, 4, 8 …)', make: n => cycleOf(POW2, n), ref: true,
-    hint: labels => ({ title: '2의 거듭제곱 (2를 계속 곱해요)', lines: POW2.slice(0, Math.min(labels.length, POW2.length)).map((t, i) => i < 2 ? t : `2^${i}=${t}`), note: labels.length > POW2.length ? `${POW2[POW2.length - 1]} 다음에는 다시 1부터.` : '' }) },
-  { id: 'pi', group: '수학 수열', name: '원주율 π (3.1415 …)', make: n => [...piDigits(n)], ref: true,
-    hint: labels => ({ title: '원주율 π', lines: [groupDecimals(labels.join(''))], big: true }) },
-  { id: 'e', group: '수학 수열', name: '자연상수 e (2.7182 …)', make: n => [...eDigits(n)], ref: true,
-    hint: labels => ({ title: '자연상수 e', lines: [groupDecimals(labels.join(''))], big: true }) },
-  { id: 'fact', group: '수학 수열', name: '팩토리얼 n! (1!, 2!, 3! …)', make: factorialTokens, ref: true, hint: factorialHint }
+  { id: 'prime', group: '수학 수열', name: '소수 (100까지 반복)', make: n => cycleOf(PRIMES, n), period: PRIMES.length, cycle: `${PRIMES[0]}→${PRIMES[1]}→…→${PRIMES[PRIMES.length - 1]}`,
+    hint: labels => ({ title: `소수 (1과 자기 자신으로만 나누어떨어지는 수, ${PRIME_MAX}까지)`, lines: [PRIMES.slice(0, Math.min(labels.length, PRIMES.length)).join(', ')],
+      note: labels.length > PRIMES.length ? `${PRIMES[PRIMES.length - 1]} 다음에는 다시 ${PRIMES[0]}부터.` : '' }) },
+  { id: 'square', group: '수학 수열', name: '제곱수 (20×20까지 반복)', make: n => cycleOf(SQUARES, n), period: SQUARES.length, cycle: `1→4→…→${SQUARES[SQUARES.length - 1]}`,
+    hint: labels => ({ title: '제곱수', lines: SQUARES.slice(0, Math.min(labels.length, SQUARES.length)).map((t, i) => `${i + 1}×${i + 1}=${t}`),
+      note: labels.length > SQUARES.length ? `${SQUARES[SQUARES.length - 1]} 다음에는 다시 1부터.` : '' }) },
+  { id: 'triangle', group: '수학 수열', name: '삼각수 (10번째까지 반복)', make: n => cycleOf(TRIS, n), period: TRIS.length, cycle: `1→3→…→${TRIS[TRIS.length - 1]}`,
+    hint: labels => ({ title: '삼각수', lines: TRIS.slice(0, Math.min(labels.length, TRIS.length)).map((t, i) => i === 0 ? t : `${triangleSum(i + 1)}=${t}`),
+      note: labels.length > TRIS.length ? `${TRIS[TRIS.length - 1]} 다음에는 다시 1부터.` : '' }) },
+  { id: 'fib', group: '수학 수열', name: '피보나치 (100까지 반복)', make: n => cycleOf(FIB, n), period: FIB.length, ref: true,
+    hint: labels => ({ title: `피보나치 수열 (앞의 두 수를 더해요, ${FIB_MAX} 이하)`, lines: [FIB.slice(0, Math.min(labels.length, FIB.length)).join(', ')], note: labels.length > FIB.length ? `${FIB[FIB.length - 1]} 다음에는 다시 1, 1, 2 …부터.` : '' }) },
+  { id: 'pow2', group: '수학 수열', name: '2의 거듭제곱 (2^15까지 반복)', make: n => cycleOf(POW2, n), period: POW2.length, ref: true,
+    hint: labels => ({ title: `2의 거듭제곱 (2를 계속 곱해요, 2^${POW2_MAX}까지)`, lines: POW2.slice(0, Math.min(labels.length, POW2.length)).map((t, i) => i < 2 ? t : `2^${i}=${t}`), note: labels.length > POW2.length ? `${POW2[POW2.length - 1]} 다음에는 다시 1부터.` : '' }) },
+  { id: 'pi', group: '수학 수열', name: '원주율 π (소수점 아래 20자리 반복)', make: n => cycleOf([...piDigits(DEC_MAX + 1)], n), period: DEC_MAX + 1, ref: true,
+    hint: labels => ({ title: `원주율 π (소수점 아래 ${DEC_MAX}자리까지)`, lines: [groupDecimals(labels.slice(0, DEC_MAX + 1).join(''))], big: true,
+      note: labels.length > DEC_MAX + 1 ? `${DEC_MAX}번째 자리 다음에는 다시 ${labels[0]}부터.` : '' }) },
+  { id: 'e', group: '수학 수열', name: '자연상수 e (소수점 아래 20자리 반복)', make: n => cycleOf([...eDigits(DEC_MAX + 1)], n), period: DEC_MAX + 1, ref: true,
+    hint: labels => ({ title: `자연상수 e (소수점 아래 ${DEC_MAX}자리까지)`, lines: [groupDecimals(labels.slice(0, DEC_MAX + 1).join(''))], big: true,
+      note: labels.length > DEC_MAX + 1 ? `${DEC_MAX}번째 자리 다음에는 다시 ${labels[0]}부터.` : '' }) },
+  { id: 'fact', group: '수학 수열', name: '팩토리얼 n! (1!, 2!, 3! …)', make: factorialTokens, groups: factorialGroups, ref: true, hint: factorialHint }
 ];
 
 function shuffle(arr) {
@@ -365,10 +390,40 @@ function roomInPoly(poly, pt) {
   return best;
 }
 
+// 길을 따라갈 때 헷갈리는 걸음의 비율:
+// 다음 글자와 같은 글자가 아직 안 간 이웃에 둘 이상 있는 경우
+function ambiguity(maze) {
+  const seen = new Set();
+  let bad = 0;
+  for (let i = 0; i + 1 < maze.path.length; i++) {
+    const c = maze.path[i];
+    seen.add(c);
+    const want = maze.labels[maze.path[i + 1]];
+    if (maze.adj[c].filter(v => !seen.has(v) && maze.labels[v] === want).length > 1) bad++;
+  }
+  return bad / Math.max(1, maze.path.length - 1);
+}
+
+// 수학 수열은 여러 판을 만들어 가장 덜 헷갈리는 판을 고른다.
+const PICK_TRIES = 12;
+
 // 미로 하나 만들기
 function buildMaze(shapeId, seqId) {
-  const shape = SHAPES.find(s => s.id === shapeId);
   const seq = SEQUENCES.find(s => s.id === seqId) || SEQUENCES[0];
+  if (seq.group !== '수학 수열') return buildOnce(shapeId, seq);
+  let best = null, bestScore = Infinity;
+  for (let t = 0; t < PICK_TRIES; t++) {
+    const m = buildOnce(shapeId, seq);
+    if (!m) continue;
+    const score = ambiguity(m);
+    if (score < bestScore) { best = m; bestScore = score; }
+    if (score === 0) break;
+  }
+  return best;
+}
+
+function buildOnce(shapeId, seq) {
+  const shape = SHAPES.find(s => s.id === shapeId);
   for (let attempt = 0; attempt < 6; attempt++) {
     const raw = shape.build();
     normalize(raw);
@@ -382,7 +437,13 @@ function buildMaze(shapeId, seqId) {
     const order = new Array(cells.length);
     path.forEach((c, i) => { order[c] = i; });
     const seqLabels = seq.make(cells.length);  // 길 순서대로의 글자
+    // 칸 색 구분: 한 바퀴(팩토리얼은 n! 하나)마다 다른 색
+    const n = cells.length;
+    const grp = seq.groups ? seq.groups(n) : seq.period ? range(n, i => Math.floor(i / seq.period)) : null;
+    const grouped = !!grp && grp[n - 1] > 0;
     return {
+      groupOf: grouped ? cells.map((_, c) => grp[order[c]]) : null,
+      groupStart: grouped ? cells.map((_, c) => order[c] === 0 || grp[order[c]] !== grp[order[c] - 1]) : null,
       shape, seq, cells, path, order, seqLabels,
       adj: g.adj,
       labels: cells.map((_, c) => seqLabels[order[c]]),

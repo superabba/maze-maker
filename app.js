@@ -3,6 +3,14 @@
 
 const SVGNS = 'http://www.w3.org/2000/svg';
 const COLOR = { start: '#d9f2d0', end: '#ffd9e0', answer: '#e53935' };
+// 칸 색 구분: 한 바퀴(팩토리얼은 n! 하나)마다 다른 파스텔색. 출발(초록)·도착(분홍)과 비슷한 색은 뺀다.
+const GROUP_HUES = [];
+for (let h = 0; h < 360; h += 12) if (!(h >= 96 && h <= 132) && h !== 336 && h !== 348) GROUP_HUES.push(h);
+function groupColor(g) {
+  const hue = GROUP_HUES[(g * 7) % GROUP_HUES.length];  // 7칸씩 건너뛰어 이어진 묶음끼리 색 차이가 크게
+  return `hsl(${hue}, 80%, ${g % 2 ? 93 : 88}%)`;
+}
+const EASY_CELLS = 4;  // 쉬움: 처음 몇 칸을 미리 이어 줄지
 
 function htmlEl(tag, className, text) {
   const e = document.createElement(tag);
@@ -26,7 +34,7 @@ function fitFont(label, room) {
   return Math.max(7, Math.min(22, room * 1.25, room * 1.8 / w));
 }
 
-function guideText(maze) {
+function guideText(maze, easy) {
   const { seq, labels, path, kind, shape } = maze;
   const first = labels[path[0]], last = labels[path[path.length - 1]];
   let text = seq.ref
@@ -36,12 +44,18 @@ function guideText(maze) {
       : `${first}부터 ${last}까지 순서대로, 맞닿은 칸끼리 선을 이어 보세요.`;
   if (kind === 'nodes') text += ' 선으로 이어진 돌만 건널 수 있어요.';
   if (shape.id === 'spiral') text += ' 굵은 벽은 넘어갈 수 없어요.';
+  if (maze.groupOf) {
+    text += seq.groups
+      ? ' n! 하나가 한 묶음이에요. 묶음마다 칸 색이 다르고, ★은 n! 식 칸이에요.'
+      : ' 한 바퀴마다 칸 색이 달라지고, ★은 새 바퀴의 시작이에요.';
+  }
+  if (easy) text += ` 빨간 선은 처음 ${EASY_CELLS}칸을 미리 이은 길이에요.`;
   return text;
 }
 
 // 문제지(또는 정답지) 한 장 그리기
 // no: 여러 장 만들 때 문제지 번호 (정답지와 짝 맞추기용)
-function renderPage(maze, shape, isAnswer, no) {
+function renderPage(maze, shape, isAnswer, no, easy) {
   const page = htmlEl('section', 'page');
   const head = htmlEl('div', 'sheet-head');
   const h2 = htmlEl('h2', null, shape.name + ' 미로 ');
@@ -57,7 +71,7 @@ function renderPage(maze, shape, isAnswer, no) {
   }
 
   if (maze.hint) page.appendChild(renderHint(maze.hint));
-  page.appendChild(htmlEl('p', 'guide', guideText(maze)));
+  page.appendChild(htmlEl('p', 'guide', guideText(maze, easy && !isAnswer)));
   const meta = htmlEl('p', 'meta',
     `칸 ${maze.cells.length}개 · 이동: ${shape.dirs} · 난이도 ${'★'.repeat(shape.level)}${'☆'.repeat(3 - shape.level)}`);
   meta.appendChild(htmlEl('span', 'swatch start'));
@@ -66,7 +80,7 @@ function renderPage(maze, shape, isAnswer, no) {
   meta.appendChild(document.createTextNode('도착'));
   page.appendChild(meta);
 
-  page.appendChild(drawMaze(maze, isAnswer));
+  page.appendChild(drawMaze(maze, isAnswer, easy));
   return page;
 }
 
@@ -92,14 +106,14 @@ function hintItem(line) {
   return item;
 }
 
-function drawMaze(maze, isAnswer) {
+function drawMaze(maze, isAnswer, easy) {
   const pad = 14;
   const svg = svgEl('svg', {
     class: 'maze',
     viewBox: `${-pad} ${-pad} ${maze.width + pad * 2} ${maze.height + pad * 2}`
   });
   const startCell = maze.path[0], endCell = maze.path[maze.path.length - 1];
-  const fillOf = i => (i === startCell ? COLOR.start : i === endCell ? COLOR.end : '#fff');
+  const fillOf = i => (i === startCell ? COLOR.start : i === endCell ? COLOR.end : maze.groupOf ? groupColor(maze.groupOf[i]) : '#fff');
   const rooms = [];
 
   if (maze.kind === 'nodes') {
@@ -136,6 +150,14 @@ function drawMaze(maze, isAnswer) {
     }, svg);
   }
 
+  if (easy && !isAnswer) {
+    svgEl('polyline', {
+      points: pts(maze.path.slice(0, EASY_CELLS).map(i => maze.cells[i].center)), fill: 'none',
+      stroke: COLOR.answer, 'stroke-width': 4, 'stroke-opacity': 0.55,
+      'stroke-linejoin': 'round', 'stroke-linecap': 'round'
+    }, svg);
+  }
+
   maze.cells.forEach((c, i) => {
     const label = maze.labels[i];
     const t = svgEl('text', {
@@ -143,6 +165,15 @@ function drawMaze(maze, isAnswer) {
       'font-size': fitFont(label, rooms[i]).toFixed(1), fill: '#222'
     }, svg);
     t.textContent = label;
+    // 새 바퀴(묶음)가 시작되는 칸에 ★
+    if (maze.groupStart && maze.groupStart[i]) {
+      const star = svgEl('text', {
+        x: (c.center[0] - rooms[i] * 0.65).toFixed(1), y: (c.center[1] - rooms[i] * 0.45).toFixed(1),
+        'text-anchor': 'middle', 'dominant-baseline': 'central',
+        'font-size': Math.max(6, Math.min(11, rooms[i] * 0.6)).toFixed(1), fill: '#b26a00'
+      }, svg);
+      star.textContent = '★';
+    }
   });
   return svg;
 }
@@ -158,6 +189,7 @@ function generate() {
   const status = document.getElementById('status');
   const pages = document.getElementById('pages');
   const answers = document.getElementById('answerPages');
+  const easy = document.getElementById('easyCheck').checked;
   const printBtn = document.getElementById('printBtn');
   status.textContent = '미로를 만드는 중입니다…';
   pages.textContent = '';
@@ -177,8 +209,8 @@ function generate() {
     if (myId !== generateId) return;
     const { shape, no } = jobs[done];
     const maze = buildMaze(shape.id, seqId);
-    pages.appendChild(renderPage(maze, shape, false, no));
-    if (maze) answers.appendChild(renderPage(maze, shape, true, no));
+    pages.appendChild(renderPage(maze, shape, false, no, easy));
+    if (maze) answers.appendChild(renderPage(maze, shape, true, no, false));
     else failed++;
     done++;
     if (done < jobs.length) {
@@ -228,6 +260,7 @@ function init() {
   seqSelect.addEventListener('change', generate);
   document.getElementById('countInput').addEventListener('change', generate);
   document.getElementById('answerCheck').addEventListener('change', toggleAnswers);
+  document.getElementById('easyCheck').addEventListener('change', generate);
   generate();
 }
 
