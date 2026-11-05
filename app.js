@@ -75,8 +75,10 @@ function renderPage(maze, shape, isAnswer, no, easy) {
   const meta = htmlEl('p', 'meta',
     `칸 ${maze.cells.length}개 · 이동: ${shape.dirs} · 난이도 ${'★'.repeat(shape.level)}${'☆'.repeat(3 - shape.level)}`);
   meta.appendChild(htmlEl('span', 'swatch start'));
+  meta.appendChild(legendIcon(CAR_ICON));
   meta.appendChild(document.createTextNode('출발'));
   meta.appendChild(htmlEl('span', 'swatch end'));
+  meta.appendChild(legendIcon(HOUSE_ICON));
   meta.appendChild(document.createTextNode('도착'));
   page.appendChild(meta);
 
@@ -175,7 +177,37 @@ function drawMaze(maze, isAnswer, easy) {
       star.textContent = '★';
     }
   });
+
+  // 출발 칸에는 자동차, 도착 칸에는 집 그림을 왼쪽 아래 구석에 그린다
+  maze.cells.forEach((c, i) => {
+    if (i === startCell) drawIcon(svg, CAR_ICON, c.center, rooms[i]);
+    if (i === endCell) drawIcon(svg, HOUSE_ICON, c.center, rooms[i]);
+  });
   return svg;
+}
+
+// 24×24 칸 기준으로 그린 그림. 자동차와 집
+const CAR_ICON = `
+  <path d="M2 14 L4 9 Q4.8 7.5 6.5 7.5 H17.5 Q19.2 7.5 20 9 L22 14 V18 H2 Z" fill="#c0392b" stroke="#222" stroke-width="0.8"/>
+  <path d="M7 9.5 H17 L18.5 12.5 H5.5 Z" fill="#fff"/>
+  <circle cx="6.5" cy="18.5" r="2.5" fill="#333"/>
+  <circle cx="17.5" cy="18.5" r="2.5" fill="#333"/>`;
+const HOUSE_ICON = `
+  <path d="M12 2 L22 11 H19 V21 H5 V11 H2 Z" fill="#8d6e63" stroke="#222" stroke-width="0.8" stroke-linejoin="round"/>
+  <rect x="10" y="14" width="4" height="7" fill="#fff3e0"/>`;
+
+// 설명 줄(범례)에 넣는 작은 그림
+function legendIcon(body) {
+  const svg = svgEl('svg', { viewBox: '0 0 24 24', width: 14, height: 14, class: 'legend-icon' });
+  svg.innerHTML = body;
+  return svg;
+}
+
+function drawIcon(svg, body, center, room) {
+  const size = Math.max(9, Math.min(20, room * 1.0));
+  const x = center[0] - room * 0.6 - size / 2, y = center[1] + room * 0.6 - size / 2;
+  const g = svgEl('g', { transform: `translate(${x.toFixed(1)},${y.toFixed(1)}) scale(${(size / 24).toFixed(3)})` }, svg);
+  g.innerHTML = body;
 }
 
 // 선택한 모양(또는 전체)으로 문제지 만들기
