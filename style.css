@@ -63,6 +63,8 @@ body {
 .swatch.start { background: var(--start); }
 .swatch.end { background: var(--end); }
 .legend-icon { vertical-align: -2px; margin: 0 4px 0 2px; }
+/* 한꺼번에 보기 항목은 기본·수학 수열 제목처럼 굵게 */
+select option.bulk { font-weight: bold; }
 /* 참고표 (원주율, 팩토리얼 등) */
 .hint {
   border: 1.5px solid #888;

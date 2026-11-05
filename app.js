@@ -55,7 +55,7 @@ function guideText(maze, easy) {
 
 // 문제지(또는 정답지) 한 장 그리기
 // no: 여러 장 만들 때 문제지 번호 (정답지와 짝 맞추기용)
-function renderPage(maze, shape, isAnswer, no, easy) {
+function renderPage(maze, shape, isAnswer, no, easy, seqName) {
   const page = htmlEl('section', 'page');
   const head = htmlEl('div', 'sheet-head');
   const h2 = htmlEl('h2', null, shape.name + ' 미로 ');
@@ -74,6 +74,7 @@ function renderPage(maze, shape, isAnswer, no, easy) {
   page.appendChild(htmlEl('p', 'guide', guideText(maze, easy && !isAnswer)));
   const meta = htmlEl('p', 'meta',
     `칸 ${maze.cells.length}개 · 이동: ${shape.dirs} · 난이도 ${'★'.repeat(shape.level)}${'☆'.repeat(3 - shape.level)}`);
+  if (seqName) meta.appendChild(document.createTextNode(` · 순서: ${seqName}`));
   meta.appendChild(htmlEl('span', 'swatch start'));
   meta.appendChild(legendIcon(CAR_ICON));
   meta.appendChild(document.createTextNode('출발'));
@@ -214,7 +215,13 @@ function drawIcon(svg, body, center, room) {
 let generateId = 0;
 function generate() {
   const shapeVal = document.getElementById('shapeSelect').value;
-  const seqId = document.getElementById('seqSelect').value;
+  const seqVal = document.getElementById('seqSelect').value;
+  // 순서 묶음: 전체 / 기본만 / 수학 수열만 / 하나
+  const seqList = seqVal === 'all' ? SEQUENCES
+    : seqVal === 'basic' ? SEQUENCES.filter(q => q.group === '기본')
+    : seqVal === 'math' ? SEQUENCES.filter(q => q.group === '수학 수열')
+    : SEQUENCES.filter(q => q.id === seqVal);
+  const multiSeq = seqList.length > 1;
   const countInput = document.getElementById('countInput');
   const count = Math.max(1, Math.min(30, parseInt(countInput.value, 10) || 1));
   countInput.value = count;
@@ -231,18 +238,22 @@ function generate() {
 
   // 장 수만큼 [새로 만들기]를 누른 것처럼 매번 다른 미로를 만든다. 전체 모양이면 한 벌씩 반복
   const list = shapeVal === 'all' ? SHAPES : SHAPES.filter(s => s.id === shapeVal);
+  // 순서 묶음이면 순서마다 모양 전체를 차례로 묶는다
   const jobs = [];
-  for (let no = 1; no <= count; no++) list.forEach(shape => jobs.push({ shape, no: count > 1 ? no : 0 }));
+  for (let no = 1; no <= count; no++) {
+    seqList.forEach(seq => list.forEach(shape => jobs.push({ shape, seq, no: count > 1 ? no : 0 })));
+  }
   printBtn.disabled = true;
 
   // 한 장씩 나눠 만들어 화면이 멈추지 않게 한다
   let done = 0, failed = 0;
   const step = () => {
     if (myId !== generateId) return;
-    const { shape, no } = jobs[done];
-    const maze = buildMaze(shape.id, seqId);
-    pages.appendChild(renderPage(maze, shape, false, no, easy));
-    if (maze) answers.appendChild(renderPage(maze, shape, true, no, false));
+    const { shape, seq, no } = jobs[done];
+    const maze = buildMaze(shape.id, seq.id);
+    const label = multiSeq ? seq.name : '';
+    pages.appendChild(renderPage(maze, shape, false, no, easy, label));
+    if (maze) answers.appendChild(renderPage(maze, shape, true, no, false, label));
     else failed++;
     done++;
     if (done < jobs.length) {
@@ -264,14 +275,15 @@ function toggleAnswers() {
 
 function init() {
   const shapeSelect = document.getElementById('shapeSelect');
-  const all = htmlEl('option', null, '전체 모양 한꺼번에 보기');
-  all.value = 'all';
-  shapeSelect.appendChild(all);
   SHAPES.forEach(s => {
     const o = htmlEl('option', null, s.name);
     o.value = s.id;
     shapeSelect.appendChild(o);
   });
+  const all = htmlEl('option', 'bulk', '전체 모양 한꺼번에 보기');
+  all.value = 'all';
+  shapeSelect.appendChild(all);
+  shapeSelect.value = 'square';  // 처음에는 네모 모양을 보여 준다
 
   const seqSelect = document.getElementById('seqSelect');
   const groups = {};
@@ -286,6 +298,12 @@ function init() {
     groups[s.group].appendChild(o);
   });
 
+  [['all', '전체 순서 한꺼번에 보기'], ['basic', '기본 순서만 한꺼번에 보기'], ['math', '수학 수열만 한꺼번에 보기']].forEach(([v, t]) => {
+    const o = htmlEl('option', 'bulk', t);
+    o.value = v;
+    seqSelect.appendChild(o);
+  });
+  seqSelect.value = 'one';  // 처음에는 한 가지 순서로 보여 준다
   document.getElementById('makeBtn').addEventListener('click', generate);
   document.getElementById('printBtn').addEventListener('click', () => window.print());
   shapeSelect.addEventListener('change', generate);
